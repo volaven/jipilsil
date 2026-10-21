@@ -4,3 +4,10 @@ icons/*.png
 *.docx
 *.zip
 img/*.webp
+node_modules/
+qa/
+*.sqlite*
+.env
+.env.*
+!.env.example
+*.log

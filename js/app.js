@@ -6,6 +6,7 @@ import { $, $$, esc, pad2, normalizeText, tidyPaste, counts, fmtTime, fmtDur, de
   makeZip, docxParts, makeDocx, zipBytes, download, safeName, diffHTML, canon, looseKey } from './util.js';
 import { listRows, castRows, toCSV, STATUS, syncLabel } from './tables.js';
 import { NTYPE, noteToText, searchText } from './notes.js';
+import { createAIRoom } from './ai-room.js';
 
 const S = {
   works: [], eps: new Map(),   // workId -> episodes (정렬됨)
@@ -17,6 +18,20 @@ const S = {
   open: new Set(),
 };
 window.__yw = S; // 테스트·디버그용
+
+const aiRoom=createAIRoom({
+  notify:message=>toast(message),
+  snapshot:async workId=>{
+    await flushSave();await loadAll();const w=S.works.find(w=>w.id===workId);if(!w)throw new Error('작품을 찾지 못했습니다.');
+    return {workId:w.id,title:w.title,cast:w.cast||[],episodes:[...(S.eps.get(w.id)||[])].map(e=>({id:e.id,title:e.title||'',text:e.text||'',memo:e.memo||''})),notes:(await db.all('notes')).filter(n=>n.workId===w.id).sort((a,b)=>a.id.localeCompare(b.id)).map(n=>({id:n.id,title:n.title||'',text:noteToText(n,{workTitle:w.title})}))};
+  },
+  importDraft:async(job,text,title)=>{
+    await flushSave();await loadAll();if(!S.works.some(w=>w.id===job.workId))throw new Error('작품이 삭제되어 회차를 추가할 수 없습니다.');const eps=S.eps.get(job.workId)||[];const now=Date.now();
+    const ep=await db.importAIDraft(job.id,{id:db.uid('e'),workId:job.workId,order:eps.length?Math.max(...eps.map(e=>e.order||0))+1:0,title:title||'다음 회차 초안',label:'',memo:'AI 집필실에서 검토 후 추가',text:normalizeText(text),status:'draft',oneLine:'',createdAt:now,updatedAt:now,rev:1,dirty:true,drive:null,aiOrigin:{jobId:job.id,sourceHash:job.sourceHash,provider:job.results[0].provider}});
+    await loadAll();renderSide();scheduleSync();showTab('note',{keep:true});await openEpisode(ep.id);toast('검토한 초안을 회차에 저장했어요.');
+  }
+});
+$('#btnAI').onclick=()=>{const ep=findEp(S.cur);if(ep)aiRoom.open(ep.workId);else toast('먼저 작품과 회차를 선택하세요.');};
 
 const REASON = { auto: '자동 저장', manual: '직접 저장', 'before-restore': '복원 전', 'before-pull': '드라이브 받기 전', 'before-paste': '붙여넣기 전', 'before-import': '가져오기 전', 'conflict-local': '충돌 · 이 기기', 'conflict-remote': '충돌 · 드라이브', 'before-revise': '수정본 반영 전', open: '열었을 때' };
 
@@ -1131,10 +1146,11 @@ function renderWorks() {
   const eps = S.eps.get(w.id) || [];
   const tot = eps.reduce((a, e) => { const c = counts(e.text); a[0] += c.noSp; a[1] += c.all; return a; }, [0, 0]);
   v.innerHTML = `<div class="wrap"><div class="wd-head"><button class="icon-btn" id="wBack" aria-label="작품 목록">‹</button><h2>${esc(w.title)}</h2>
-    <div class="seg" role="tablist"><button data-p="list" class="${S.workPane === 'list' ? 'on' : ''}">회차 목록표</button><button data-p="cast" class="${S.workPane === 'cast' ? 'on' : ''}">인물·설정표</button></div>
+    <div class="seg" role="tablist"><button data-p="list" class="${S.workPane === 'list' ? 'on' : ''}">회차 목록표</button><button data-p="cast" class="${S.workPane === 'cast' ? 'on' : ''}">인물·설정표</button><button id="workAI">AI 집필실</button></div>
     <button class="icon-btn" id="wMenu" aria-label="작품 메뉴">⋯</button></div><div id="wPane"></div></div>`;
   v.querySelector('#wBack').onclick = () => { S.workSel = null; renderWorks(); };
   v.querySelector('#wMenu').onclick = async () => { await workMenu(w.id); renderWorks(); };
+  v.querySelector('#workAI').onclick = () => aiRoom.open(w.id);
   v.querySelectorAll('.seg [data-p]').forEach(b => b.onclick = () => { S.workPane = b.dataset.p; renderWorks(); });
   const pane = v.querySelector('#wPane');
   if (S.workPane === 'list') {
@@ -1445,10 +1461,11 @@ async function renderMy() {
       <div class="my-row"><div class="t"><b>화면 테마</b><small>노트는 언제나 차분하게</small></div><select id="myTheme"><option value="light">라벤더</option><option value="dark">밤</option><option value="sepia">세피아</option></select></div>
       <div class="my-row"><div class="t"><b>구글 드라이브</b><small>${linked ? (Drive.hasValidToken() ? '연결됨 · 자동 저장 중' : '다시 연결이 필요해요') : '아직 연결 전 · 원고는 기기에만 저장 중'}</small></div><button class="btn brand small" id="myDrive">${linked ? '관리' : '연결하기'}</button></div>
       <div class="my-row"><div class="t"><b>집필 설정 · 백업</b><small>글꼴, 줄 간격, 자동 버전 저장, 전체 백업</small></div><button class="btn soft small" id="mySet">열기</button></div>
+      <div class="my-row"><div class="t"><b>AI 연결 관리</b><small>Codex · Claude · Gemini · Grok</small></div><button class="btn soft small" id="myAI">열기</button></div>
       <div class="my-row"><div class="t"><b>앱으로 설치</b><small>${isInstalled() ? '이미 앱으로 쓰고 있어요 ✓' : installHowTo()}</small></div>${isInstalled() ? '' : `<button class="btn soft small" data-install>${INST.evt ? '설치' : '방법'}</button>`}</div>
       <div class="my-row"><div class="t"><b>시작 화면 보기</b><small>집필실 첫 화면을 다시 봐요</small></div><button class="btn ghost small" id="mySplash">보기</button></div>
     </div>
-    <p class="mute small" style="margin-top:18px;line-height:1.6">🔒 원고·사진·음성은 이 기기와 아라 님 구글 드라이브에만 저장돼요. 앱 코드가 올라가는 곳에는 원고가 절대 들어가지 않아요.<br>집필실 · 쓰는 오늘, 완성의 내일로</p>
+    <p class="mute small" style="margin-top:18px;line-height:1.6">🔒 원고는 이 기기에 먼저 저장돼요. 드라이브 연결 시 내 드라이브에 동기화돼요. AI 집필실 실행 시 선택한 작품 자료가 해당 AI 서비스로 전송되고 로컬 AI 이력에도 보관돼요. 앱 코드 저장소에는 원고를 올리지 않아요.<br>집필실 · 쓰는 오늘, 완성의 내일로</p>
   </div>`;
   const v = $('#vMy');
   v.querySelector('#myTheme').value = st.theme;
@@ -1457,6 +1474,7 @@ async function renderMy() {
   v.querySelector('#myBreak').onchange = e => { st.breakMin = +e.target.value; saveSettings(); if (!T.running) setMode(T.mode); };
   v.querySelector('#myTheme').onchange = e => { st.theme = e.target.value; saveSettings(); };
   v.querySelector('#myDrive').onclick = openSettings; v.querySelector('#mySet').onclick = openSettings;
+  v.querySelector('#myAI').onclick = () => aiRoom.open();
   v.querySelector('#mySplash').onclick = () => { sessionStorage.removeItem('jpsSplash'); showSplash(); };
 }
 

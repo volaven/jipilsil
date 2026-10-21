@@ -1,0 +1,12 @@
+{
+  "manifest_version":3,
+  "name":"집필실 AI 웹 연결",
+  "version":"1.0.0",
+  "description":"집필실의 요청을 Gemini·Grok 웹에 전달하고 답변을 로컬 앱으로 가져옵니다.",
+  "minimum_chrome_version":"116",
+  "permissions":["storage","alarms"],
+  "host_permissions":["http://127.0.0.1:8765/*","https://gemini.google.com/*","https://grok.com/*"],
+  "background":{"service_worker":"background.js","type":"module"},
+  "action":{"default_popup":"popup.html","default_title":"집필실 AI 연결"},
+  "content_scripts":[{"matches":["https://gemini.google.com/*","https://grok.com/*"],"js":["content.js"],"run_at":"document_idle"}]
+}

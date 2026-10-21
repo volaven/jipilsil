@@ -74,3 +74,14 @@ export async function update(store, key, fn) {
     t.onerror = () => rej(t.error);
   });
 }
+
+// 회차와 초안 반영 표시를 한 트랜잭션에 저장해 중복 추가를 막습니다.
+export async function importAIDraft(draftId, episode) {
+  const d=await openDB();
+  return new Promise((resolve,reject)=>{
+    const t=d.transaction(['episodes','kv'],'readwrite'),kv=t.objectStore('kv'),eps=t.objectStore('episodes');let result;
+    const request=kv.get('ai-import:'+draftId);
+    request.onsuccess=()=>{if(request.result){const old=eps.get(request.result);old.onsuccess=()=>{result=old.result;if(!result){result=episode;eps.put(episode);kv.put(episode.id,'ai-import:'+draftId);}};}else{result=episode;eps.put(episode);kv.put(episode.id,'ai-import:'+draftId);}};
+    t.oncomplete=()=>resolve(result);t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error||new Error('회차 추가 중단'));
+  });
+}

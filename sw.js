@@ -1,7 +1,7 @@
 // 집필실 서비스워커 — 오프라인에서도 앱이 열리게 (원고 자체는 IndexedDB에 있음)
-const VERSION = 'jps-v7-__BUILD__';
+const VERSION = 'jps-ai-v1-__BUILD__';
 const SHELL = ['./', 'index.html', 'config.js', 'css/app.css', 'js/app.js', 'js/db.js', 'js/drive.js', 'js/audio.js', 'js/util.js',
-  'manifest.webmanifest', 'img/fighting.webp', 'img/great.webp', 'img/focus.webp', 'img/oops.webp', 'js/tables.js', 'js/notes.js', 'icons/logo.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-512-maskable.png'];
+  'manifest.webmanifest', 'img/fighting.webp', 'img/great.webp', 'img/focus.webp', 'img/oops.webp', 'js/tables.js', 'js/notes.js', 'js/ai-room.js', 'css/ai-room.css', 'icons/logo.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-512-maskable.png'];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net'];
 
 self.addEventListener('install', e => {
@@ -13,6 +13,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request; if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  if (url.pathname.startsWith('/api/')) return;
   if (FONT_HOSTS.includes(url.hostname)) { // 글꼴: 캐시 우선
     e.respondWith(caches.open('jps-fonts').then(async c => {
       const hit = await c.match(req); if (hit) return hit;
