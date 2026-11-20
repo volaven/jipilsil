@@ -845,10 +845,10 @@ async function openSettings() {
   const st = S.settings;
   const r = await dialog({ title: '설정', wide: true, html: `
     <section class="set"><h4>☁ 구글 드라이브</h4>
-      <p class="mute small">원고는 <b>이 기기</b>와 <b>아라 님 드라이브</b>에만 저장돼요. 앱 권한은 「이 앱이 만든 파일만」(drive.file)이라 다른 드라이브 파일은 볼 수 없어요. 드라이브에는 「${esc(window.YW_CONFIG?.DRIVE_ROOT_NAME || '집필실')}/작품/01화」 구글 문서로, 목록표·인물표는 구글 시트로, 사진은 「아이디어 사진」 폴더에 저장돼요.</p>
+      <p class="mute small">원고는 <b>이 기기</b>와 <b>내 구글 드라이브</b>에만 저장돼요. 앱 권한은 「이 앱이 만든 파일만」(drive.file)이라 다른 드라이브 파일은 볼 수 없어요. 드라이브에는 「${esc(window.YW_CONFIG?.DRIVE_ROOT_NAME || '집필실')}/작품/01화」 구글 문서로, 목록표·인물표는 구글 시트로, 사진은 「아이디어 사진」 폴더에 저장돼요.</p>
       <label class="fld">OAuth 클라이언트 ID <input id="setCid" value="${esc(cid || def)}" placeholder="1234…apps.googleusercontent.com" autocomplete="off" spellcheck="false" inputmode="url"></label>
       <p class="small mute" id="setCidNote">${def && (!cid || cid === def) ? '✓ 기본 ID가 들어 있어요. 그대로 「구글 드라이브 연결」을 누르면 돼요.' : cid ? '이 기기에 직접 넣은 ID를 쓰고 있어요.' : 'ID를 붙여 넣은 뒤 연결을 눌러 주세요.'}</p>
-      <p class="small"><a href="https://github.com/lee860506-tech/jipilsil/blob/main/DRIVE_SETUP.md" target="_blank" rel="noopener">클라이언트 ID 만드는 방법 (10분)</a></p>
+      <p class="small"><a href="https://github.com/volaven/jipilsil/blob/main/DRIVE_SETUP.md" target="_blank" rel="noopener">클라이언트 ID 만드는 방법 (10분)</a></p>
       <div class="row">${linked ? `<button type="button" class="btn gold" id="setConnect">${Drive.hasValidToken() ? '✓ 연결됨 · 다시 연결' : '다시 연결'}</button><button type="button" class="btn" id="setSync">지금 동기화</button><button type="button" class="btn danger" id="setDisc">연결 끊기</button>` : `<button type="button" class="btn gold" id="setConnect">구글 드라이브 연결</button>`}</div>
       <div class="set-msg" id="setMsg" role="status" aria-live="polite" hidden></div>
     </section>
@@ -1479,7 +1479,7 @@ async function renderMy() {
 }
 
 // ---------- 앱 설치 안내 (웹 → 홈 화면 / 안드로이드 앱) ----------
-const APK_URL = 'https://github.com/lee860506-tech/jipilsil/releases/latest/download/jipilsil.apk';
+const APK_URL = window.YW_CONFIG?.APK_URL || ''; // 내 APK 주소 (config.js). 비어 있으면 APK 안내를 숨겨요
 const INST = { evt: null };
 const UA = navigator.userAgent;
 const isAndroid = /Android/i.test(UA), isIOS = /iPhone|iPad|iPod/i.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -1487,13 +1487,13 @@ if (document.referrer.startsWith('android-app://')) localStorage.setItem('jpsTWA
 function isInstalled() { return !!localStorage.getItem('jpsTWA') || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true || document.referrer.startsWith('android-app://'); }
 function installHowTo() {
   if (isIOS) return 'Safari 아래 공유 버튼 ⬆︎ → 「홈 화면에 추가」';
-  if (isAndroid) return '크롬 ⋮ 메뉴 → 「홈 화면에 추가」 또는 「앱 설치」 · 안드로이드 앱(APK)도 있어요';
+  if (isAndroid) return '크롬 ⋮ 메뉴 → 「홈 화면에 추가」 또는 「앱 설치」' + (APK_URL ? ' · 안드로이드 앱(APK)도 있어요' : '');
   return '크롬·엣지 주소창 오른쪽의 설치 아이콘 ⊕ → 「설치」';
 }
 function installCardHTML() {
   if (isInstalled() || localStorage.getItem('jpsInstallHide')) return '';
   return `<div class="install-card" id="installCard"><img src="icons/logo.svg" width="40" height="40" alt=""><div class="t"><b>집필실을 앱처럼 쓰기</b><small>${esc(installHowTo())}</small></div>
-    <div class="ib">${INST.evt ? '<button class="btn brand small" data-install>설치</button>' : '<button class="btn soft small" data-install>방법 보기</button>'}${isAndroid ? `<a class="btn ghost small" href="${APK_URL}" rel="noopener">APK</a>` : ''}<button class="icon-btn sm" id="installHide" aria-label="닫기">✕</button></div></div>`;
+    <div class="ib">${INST.evt ? '<button class="btn brand small" data-install>설치</button>' : '<button class="btn soft small" data-install>방법 보기</button>'}${isAndroid && APK_URL ? `<a class="btn ghost small" href="${APK_URL}" rel="noopener">APK</a>` : ''}<button class="icon-btn sm" id="installHide" aria-label="닫기">✕</button></div></div>`;
 }
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); INST.evt = e; if (S.tab === 'home' || S.tab === 'my') rerenderTab(); });
 addEventListener('appinstalled', () => { INST.evt = null; toast('집필실이 설치됐어요 ♡', 3000, 'great'); rerenderTab(); });
@@ -1504,7 +1504,7 @@ document.addEventListener('click', async e => {
   const steps = isIOS ? ['Safari로 이 주소를 열어요.', '아래쪽 <b>공유</b> 버튼 ⬆︎ 을 눌러요.', '<b>홈 화면에 추가</b> → <b>추가</b>.']
     : isAndroid ? ['크롬으로 이 주소를 열어요.', '오른쪽 위 <b>⋮</b> 메뉴를 눌러요.', '<b>홈 화면에 추가</b> (또는 <b>앱 설치</b>) → <b>설치</b>.']
     : ['크롬이나 엣지로 이 주소를 열어요.', '주소창 오른쪽 <b>설치 아이콘 ⊕</b> (또는 ⋮ → <b>집필실 설치</b>)을 눌러요.', '<b>설치</b> — 바탕화면·작업 표시줄에서 바로 열려요.'];
-  await dialog({ title: '집필실 설치하기', html: `<ol class="steps">${steps.map(x => `<li>${x}</li>`).join('')}</ol>${isAndroid || !isIOS ? `<p class="small mute">안드로이드 폰은 앱(APK)으로도 설치할 수 있어요: <a href="${APK_URL}" rel="noopener">집필실 APK 받기</a><br>(구글 로그인이 되는 크롬 기반 앱이에요. 설치할 때 「출처를 알 수 없는 앱」 허용이 필요할 수 있어요.)</p>` : ''}<p class="small mute">설치해도 원고는 똑같이 이 기기에 저장되고, 드라이브 연결도 그대로예요.</p>`, buttons: [{ value: 'ok', label: '알겠어요', cls: 'brand' }] });
+  await dialog({ title: '집필실 설치하기', html: `<ol class="steps">${steps.map(x => `<li>${x}</li>`).join('')}</ol>${APK_URL && (isAndroid || !isIOS) ? `<p class="small mute">안드로이드 폰은 앱(APK)으로도 설치할 수 있어요: <a href="${APK_URL}" rel="noopener">집필실 APK 받기</a><br>(구글 로그인이 되는 크롬 기반 앱이에요. 설치할 때 「출처를 알 수 없는 앱」 허용이 필요할 수 있어요.)</p>` : ''}<p class="small mute">설치해도 원고는 똑같이 이 기기에 저장되고, 드라이브 연결도 그대로예요.</p>`, buttons: [{ value: 'ok', label: '알겠어요', cls: 'brand' }] });
 });
 
 // ---------- 시작 화면 ----------

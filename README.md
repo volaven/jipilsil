@@ -3,9 +3,10 @@
 한 문장씩, 이야기가 된다 ♡ — 초안부터 재독까지, 나만의 창작 메이트.
 웹소설 작가를 위한 개인 집필 노트 (설치형 웹앱 · PWA). 서버 없이 기기 안(IndexedDB)에 저장하고, 원하면 내 구글 드라이브에 동기화해요.
 
-- 실행: <https://lee860506-tech.github.io/jipilsil/>
-- 드라이브 연결 방법: [DRIVE_SETUP.md](DRIVE_SETUP.md)
-- 폰: 크롬에서 열고 ⋮ → **홈 화면에 추가 / 앱 설치**, 또는 안드로이드 앱 [jipilsil.apk](https://github.com/lee860506-tech/jipilsil/releases/latest/download/jipilsil.apk) (크롬 기반 TWA · 구글 로그인 가능)
+- 실행: 내 Firebase Hosting 주소 `https://<내 프로젝트 ID>.web.app/` (`main`에 올리면 GitHub Actions가 자동 배포)
+- 내 Firebase에 올리기 · 내 드라이브 연결 방법: [DRIVE_SETUP.md](DRIVE_SETUP.md)
+- 내 값은 `config.js` 한 곳에만 넣어요: 드라이브 OAuth 클라이언트 ID(`DEFAULT_CLIENT_ID`), 직접 만든 APK 주소(`APK_URL`, 선택)
+- 폰: 크롬에서 열고 ⋮ → **홈 화면에 추가 / 앱 설치**
 - PC: 크롬·엣지 주소창의 설치 아이콘 ⊕ → 설치
 
 ## 로컬 AI 집필실

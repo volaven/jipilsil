@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "engines": { "node": ">=24" },
-  "scripts": { "start": "node server/main.mjs", "test": "node --test test/ai-*.test.mjs" },
+  "scripts": { "start": "node server/main.mjs", "test": "node --test test/ai-*.test.mjs", "build:site": "node scripts/build-site.mjs" },
   "dependencies": { "ws": "^8.18.3" }
 }

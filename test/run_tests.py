@@ -6,7 +6,7 @@ from fake_drive import FakeDrive, GIS_STUB
 import docx as pydocx
 
 URL = sys.argv[1] if len(sys.argv) > 1 else 'http://127.0.0.1:8793/'
-LIVE = 'github.io' in URL
+LIVE = not any(h in URL for h in ('127.0.0.1', 'localhost'))  # 배포된 주소(내 Firebase 등)에서 돌릴 때
 SHOTS = '/workspace/yeonwol-note/shots/' + ('live_' if LIVE else '')
 DL = '/tmp/yw_dl/'; os.makedirs(DL, exist_ok=True)
 results = []; errors_all = []
@@ -270,7 +270,9 @@ with sync_playwright() as p:
 
     # ---- 드라이브 연결·동기화 (가짜 드라이브) ----
     pg.click('#btnSettings'); pg.wait_for_timeout(300)
-    check('설정: 기본 클라이언트 ID가 칸에 들어 있음', pg.input_value('#setCid').endswith('.apps.googleusercontent.com') and '기본 ID' in pg.inner_text('#setCidNote'))
+    def_cid = pg.evaluate('window.YW_CONFIG.DEFAULT_CLIENT_ID')
+    if def_cid: check('설정: 기본 클라이언트 ID가 칸에 들어 있음', pg.input_value('#setCid') == def_cid and '기본 ID' in pg.inner_text('#setCidNote'))
+    else: check('설정: 기본 ID가 없으면 빈 칸 + 붙여 넣기 안내', pg.input_value('#setCid') == '' and '붙여 넣은' in pg.inner_text('#setCidNote'))
     pg.fill('#setCid', 'abc'); pg.click('#setConnect'); pg.wait_for_timeout(400)
     m1 = pg.inner_text('#setMsg') if pg.is_visible('#setMsg') else ''
     top = pg.evaluate("()=>{const t=document.querySelector('#toast');return t.matches(':popover-open') && !t.hidden}")
@@ -418,8 +420,6 @@ with sync_playwright() as p:
         c4.set_offline(True); pg.reload(); pg.wait_for_selector('html.ready', timeout=10000)
         check('오프라인에서 앱 열림 (서비스워커 캐시)', pg.is_visible('#splash') or pg.is_visible('#vHome'))
         c4.set_offline(False)
-        al = pg.evaluate("async()=>{const r=await fetch('https://lee860506-tech.github.io/.well-known/assetlinks.json');return r.json()}")
-        check('안드로이드 앱 연결 (assetlinks.json)', any(x['target']['package_name'] == 'com.lee860506.jipilsil' for x in al))
     c4.close()
     b.close()
 
