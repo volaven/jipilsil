@@ -5,7 +5,7 @@
 
 - 실행: 내 Firebase Hosting 주소 `https://<내 프로젝트 ID>.web.app/` (`main`에 올리면 GitHub Actions가 자동 배포)
 - 내 Firebase에 올리기 · 내 드라이브 연결 방법: [DRIVE_SETUP.md](DRIVE_SETUP.md)
-- 내 값은 `config.js` 한 곳에만 넣어요: 드라이브 OAuth 클라이언트 ID(`DEFAULT_CLIENT_ID`), 직접 만든 APK 주소(`APK_URL`, 선택)
+- 내 값은 `config.js` 한 곳에만 넣어요: 드라이브 OAuth 클라이언트 ID(`DEFAULT_CLIENT_ID`)
 - 폰: 크롬에서 열고 ⋮ → **홈 화면에 추가 / 앱 설치**
 - PC: 크롬·엣지 주소창의 설치 아이콘 ⊕ → 설치
 
